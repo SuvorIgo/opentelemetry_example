@@ -7,7 +7,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 export class AppController {
   constructor(private readonly appService: AppService) { }
 
-  // @OtelSpan() // Данный функционал почти завершил, работаю с передачей контекста из одного декоратора в другой (чтобы получить payload) С помощью него не нужно будет создавать спан с конфигом в коде
+  // @OtelSpan() // Данный функционал почти завершил, работаю с передачей контекста из одного декоратора в другой (чтобы получить payload) С помощью него не нужно будет создавать спан с конфигом в коде и вообще не взаимодействовать с ним в коде
   @UseInterceptors(OpenTelemetryInterceptor)
   @MessagePattern('get-cat-fact')
   getCatFact(@Payload() data: any): Promise<any> {
