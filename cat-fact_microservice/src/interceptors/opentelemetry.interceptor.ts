@@ -11,7 +11,6 @@ export class OpenTelemetryInterceptor implements NestInterceptor {
         const reqContext: NatsContext = request.getContext();
         const reqBody = request.getData();
         const reqHeaders: MsgHdrsImpl = reqContext.getHeaders();
-        console.log(reqHeaders)
 
         reqBody.spanContext = {
             'x-b3-traceid': reqHeaders.headers.get('x-b3-traceid')[0],

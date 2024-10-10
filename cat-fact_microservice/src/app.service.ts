@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { ClientProxy, NatsRecordBuilder, RpcException } from '@nestjs/microservices';
+import { ClientProxy, NatsRecordBuilder } from '@nestjs/microservices';
 import * as openTelemetry from '@opentelemetry/api';
 import { lastValueFrom } from 'rxjs';
 import * as nats from 'nats';
@@ -14,31 +14,23 @@ export class AppService {
   ) { }
 
   async getCatFact(data: any): Promise<any> {
-    const activeSpanContext: openTelemetry.Context = openTelemetry.propagation.extract(openTelemetry.context.active(), data.spanContext);
-    const span: openTelemetry.Span = openTelemetry.trace.getTracer('default').startSpan('AppService.getCatFact', {}, activeSpanContext);
+    const outputContext = {};
+    openTelemetry.propagation.inject(
+      openTelemetry.propagation.extract(openTelemetry.context.active(), data.spanContext),
+      outputContext
+    );
+    const headers = this.getNatsHeadersFromSpanContext(outputContext);
+    const getMetadataRecord = new NatsRecordBuilder().setHeaders(headers).setData({}).build();
 
-    try {
-      const outputSpanContext = {};
-      openTelemetry.propagation.inject(activeSpanContext, outputSpanContext);
+    const url = 'https://catfact.ninja/facts';
 
-      const headers = this.getNatsHeadersFromSpanContext(outputSpanContext);
-      const getMetadataRecord = new NatsRecordBuilder().setHeaders(headers).setData({}).build();
+    const resultData = (await this.httpService.axiosRef.get(url)).data;
 
-      const url = 'https://catfact.ninja/facts';
+    const metadata = await lastValueFrom(this.metadataClient.send('get-metadata', getMetadataRecord));
 
-      const resultData = (await this.httpService.axiosRef.get(url)).data;
+    resultData.metadata = metadata;
 
-      const metadata = await lastValueFrom(this.metadataClient.send('get-metadata', getMetadataRecord));
-
-      resultData.metadata = metadata;
-
-      return resultData;
-    } catch (err) {
-      console.log(err)
-      throw new RpcException(err);
-    } finally {
-      span.end();
-    }
+    return resultData;
   }
 
   private getNatsHeadersFromSpanContext(spanContext) {
