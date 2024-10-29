@@ -14,12 +14,17 @@ export class AppService {
   ) { }
 
   async getCatFact(data: any): Promise<any> {
-    const outputContext = {};
-    openTelemetry.propagation.inject(
-      openTelemetry.propagation.extract(openTelemetry.context.active(), data.spanContext),
-      outputContext
-    );
-    const headers = this.getNatsHeadersFromSpanContext(outputContext);
+    this.setAttributesInSpan(openTelemetry.trace.getActiveSpan(), {
+      'messaging.system': 'nats',
+      'messaging.destination': 'get-cat-fact',
+      'messaging.operation': 'send',
+      'messaging.host': 'localhost',
+      'messaging.port': 4222
+    })
+
+    const outputSpanContext = {};
+    openTelemetry.propagation.inject(openTelemetry.context.active(), outputSpanContext);
+    const headers = this.getNatsHeadersFromSpanContext(outputSpanContext);
     const getMetadataRecord = new NatsRecordBuilder().setHeaders(headers).setData({}).build();
 
     const url = 'https://catfact.ninja/facts';
@@ -44,5 +49,9 @@ export class AppService {
     headers.set('b3', spanContext['b3']);
 
     return headers;
+  }
+
+  private setAttributesInSpan(span: openTelemetry.Span, attributes: openTelemetry.Attributes): void {
+    span.setAttributes(attributes);
   }
 }
