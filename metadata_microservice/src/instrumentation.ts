@@ -1,6 +1,6 @@
 import * as process from 'process';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
 import { JaegerPropagator } from '@opentelemetry/propagator-jaeger';
@@ -10,7 +10,7 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 export const OtelNodeSDK = new NodeSDK({
     serviceName: 'METADATA_MICROSERVICE',
     spanProcessors: [
-        new BatchSpanProcessor(
+        new SimpleSpanProcessor(
             new OTLPTraceExporter({
                 url: 'http://localhost:4318/v1/traces'
             })
